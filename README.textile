@@ -6,7 +6,6 @@ h2. Usage
 
 Simple example.
 
-<code>
 <pre>
 try {
     $dbh = new PDO('sqlite:/tmp/record.sqlite');
@@ -43,4 +42,3 @@ printf('Guy called %s %s is %d years old.',
         $p->lastName(),
         $p->age());
 </pre>
-</code>
