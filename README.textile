@@ -1,0 +1,44 @@
+h2. Record - Simple Active Record implementation in PHP
+
+This code is combination of Model class taken from "Green Framework":http://code.google.com/p/green-framework/ and "DB_DataContainer":http://svn.appelsiini.net/viewvc/php/trunk/DB_DataContainer/ and "MDB2_DataContainer2":http://svn.appelsiini.net/viewvc/php/trunk/MDB2_DataContainer2/ classes. 
+
+h2. Usage
+
+Simple example.
+
+<code>
+try {
+    $dbh = new PDO('sqlite:/tmp/record.sqlite');
+} catch(PDOException $e) {
+    print $e->getMessage();
+}
+
+Person::connection($dbh);
+
+class Person extends Record {
+    
+    protected $first_name;
+    protected $last_name;
+    protected $age;
+    
+    public function beforeSave() {
+        if (120 > $this->age()) {
+            return false;
+        } else {
+            return true;
+        }
+    };
+
+}
+
+$p = new Person();
+$p->firstName('Mika');
+$p->lastName('Tuupola');
+$p->age(100);
+$p->save();
+
+printf('Guy called %s %s is %d years old.', 
+        $p->firstName(),
+        $p->lastName(),
+        $p->age());
+</code>
