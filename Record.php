@@ -27,8 +27,10 @@ class Record extends Record_Overload {
     
     public static $dbh = false;
     
-    private $id;
-    
+    protected $id;
+    protected static $has_one    = array();
+    protected static $belongs_to = array();
+        
     /**
      * Set or get the database connection.
      */
@@ -125,8 +127,7 @@ class Record extends Record_Overload {
         return $retval;
     }
     
-    public function lastInsertId()
-    {
+    public function lastInsertId() {
         return self::$dbh->lastInsertId(); 
     }
     
@@ -138,33 +139,49 @@ class Record extends Record_Overload {
             return Record_Inflector::tableize(get_class($this));            
         }
     }
-
-
-    /* TODO: hack while we are waiting for PHP 5.3, expect extending  */
-    /* class to have static function like the following:              */
-    /*    static function find($params='', $class=__CLASS__) {        */
-    /*        return parent::find($params, $class);                   */
-    /*    }                                                           */
-
-    public static function count($params=null, $class=__CLASS__) {
+    
+    public static function count($params=null) {
+        $class = get_called_class();
         $params['select'] = 'COUNT(*)';
         $sql = Record::buildSql($params, $class);
         return self::$dbh->query($sql, PDO::FETCH_COLUMN, 0)->fetch();
     }
 
-    public static function findById($id, $class=__CLASS__) {
+    public static function findById($id) {
+        $class = get_called_class();
         $params['where'] = sprintf('id=%d', $id);
         $sql = Record::buildSql($params, $class);
         return self::$dbh->query($sql, PDO::FETCH_CLASS, $class)->fetch();
     }
     
-    public static function find($params=null, $class=__CLASS__) {                                                      */        
-        $sql = Record::buildSql($params, $class);
+    public static function find() {
+        $args     = func_get_args();
+        $class    = get_called_class();
+        $modifier = ':all';
+
+        if (is_array($args[0])) {
+            $params = $args[0];
+        } else {
+            $params = $args[1];
+            if ($id = intval($args[0]) != '') {
+                /* Integer is primary key ... */
+                $params['where'] = sprintf('id=%d', $id);
+            } else {
+                /* ... or modifier. */
+                $modifier = $args[0];
+            }
+        }
+
+        $sql    = Record::buildSql($params, $class);        
         $retval = array();
         foreach (self::$dbh->query($sql, PDO::FETCH_CLASS, $class) as $object) {
             $retval[] = $object;
         }
-        return $retval;
+        if (':one' == $modifier) {
+            return $retval[0];
+        } else {
+            return $retval;            
+        }
     }
     
     private static function buildSql($params, $class) {

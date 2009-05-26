@@ -13,8 +13,6 @@ try {
     print $e->getMessage();
 }
 
-Person::connection($dbh);
-
 class Person extends Record {
     
     protected $first_name;
@@ -31,14 +29,33 @@ class Person extends Record {
 
 }
 
+class Computer extends Record {
+    
+    protected $mark;
+    protected $person_id;
+    protected static $belongs_to = array('person');
+    
+}
+
+Person::connection($dbh);
+
 $p = new Person();
 $p->firstName('Mika');
 $p->lastName('Tuupola');
 $p->age(100);
 $p->save();
 
+$c = new Computer();
+$c->mark('Apple');
+$p->computer($c);
+
 printf('Guy called %s %s is %d years old.', 
         $p->firstName(),
         $p->lastName(),
         $p->age());
+        
+$all_mika = Person::findByFirstName('Mika');
+$one_mika = Person::findByFirstName(':one', 'Mika');
+
+$apple = $one_mika->computer();
 </pre>

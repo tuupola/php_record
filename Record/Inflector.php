@@ -65,5 +65,10 @@ class Record_Inflector {
         $property = Record_Inflector::underscore($string);
         return $property;
     }
+    
+    static function method($string) {
+        $method = Record_Inflector::camelize($string);
+        return lcfirst($method);
+    }
 
 }

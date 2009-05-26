@@ -17,21 +17,58 @@ require_once 'Record/Inflector.php';
 
 class Record_Overload {
 
-    public function __call($method, $params) {
+    public function __call($method, $arguments) {
 
         $var      = get_object_vars($this);
         $retval   = false;
         $property =  Record_Inflector::property($method);
 
         if (array_key_exists($property, $var)) {
-            if (count($params)) {
-                $this->$property = $params[0];
+            if (count($arguments)) {
+                $this->$property = $arguments[0];
                 $retval = true;
             } else {
                 $retval = $this->$property;
             };
+        } else {
+            $class = get_class($this);
+            /* has one */
+            if (in_array($method, $class::$has_one)) {
+                $key    = $class . '_id';
+                if (count($arguments)) { 
+                    $setter = Record_Inflector::method($key);
+                    $arguments[0]->$setter($this->id());
+                    $arguments[0]->save();
+                    $retval = true;
+                } else {
+                    $one    = Record_Inflector::camelize($method);
+                    $finder = 'findBy' . Record_Inflector::camelize($key);
+                    $retval = $one::$finder(':one', $this->id());                        
+                }
+            } else {
+                trigger_error("Overloaded call to undefined method $class->$method()", E_USER_ERROR);
+            }
         }
         
-        return($retval);  
+        return $retval;
     }
+    
+   public static function __callStatic($method, $arguments) {
+       if (2 == count($arguments)) {
+           $modifier = $arguments[0];
+           $value    = $arguments[1];
+       } else {
+           $modifier = ':all';
+           $value    = $arguments[0];
+       }
+       if (false !== strpos($method, 'findBy')) {
+           $variable = Record_Inflector::variable(str_replace('findBy', '', $method));
+           $params['where'] = sprintf('%s="%s"', $variable, $value);
+       };
+       
+              
+       $class = get_called_class();
+       return $class::find($modifier, $params);
+   }
+   
 }
