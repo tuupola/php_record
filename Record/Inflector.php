@@ -70,5 +70,10 @@ class Record_Inflector {
         $method = Record_Inflector::camelize($string);
         return lcfirst($method);
     }
+    
+    static function finder($string) {
+        $method = Record_Inflector::camelize('findBy' . ucfirst($string));
+        return lcfirst($method);
+    }
 
 }

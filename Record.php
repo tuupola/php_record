@@ -30,6 +30,7 @@ class Record extends Record_Overload {
     protected $id;
     protected static $has_one    = array();
     protected static $belongs_to = array();
+    protected $data = array();
         
     /**
      * Set or get the database connection.
@@ -44,7 +45,10 @@ class Record extends Record_Overload {
     }
     
     public function columns() {
-        return array_keys(get_object_vars($this));
+        $columns = array_keys(get_object_vars($this));
+        $key = array_search('data', $columns);
+        unset($columns[$key]);
+        return $columns;
     }
     
     public function beforeSave() { return true; }
@@ -83,7 +87,16 @@ class Record extends Record_Overload {
             /* Force retval to be boolean. */
             $return = self::$dbh->exec($sql) !== false;
             /* TODO: This wont always work. */
-            $this->id = self::lastInsertId(); 
+            $this->id = self::lastInsertId();
+            
+            /* Save all has_one's */
+            $class = get_class($this);
+            $key   = $class . '_id';
+            foreach ($class::$has_one as $one) {
+                $setter = Record_Inflector::method($key);
+                $this->$one()->$setter($this->id());
+                $this->$one()->save();
+            };
              
             if (! $this->afterInsert()) return false;
         
@@ -175,6 +188,14 @@ class Record extends Record_Overload {
         $sql    = Record::buildSql($params, $class);        
         $retval = array();
         foreach (self::$dbh->query($sql, PDO::FETCH_CLASS, $class) as $object) {
+            /* Load all has_one's */
+            $key   = $class . '_id';
+            foreach ($class::$has_one as $one) {
+                $one_class = Record_Inflector::classify(Record_Inflector::pluralize($one));
+                $finder = Record_Inflector::finder($key);
+                $one_object = $one_class::$finder(':one', $object->id());
+                $object->data[$one] = $one_object;                
+            };
             $retval[] = $object;
         }
         if (':one' == $modifier) {

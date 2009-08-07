@@ -32,18 +32,15 @@ class Record_Overload {
             };
         } else {
             $class = get_class($this);
-            /* has one */
             if (in_array($method, $class::$has_one)) {
-                $key    = $class . '_id';
+                /* Setter for has_one */
                 if (count($arguments)) { 
-                    $setter = Record_Inflector::method($key);
-                    $arguments[0]->$setter($this->id());
-                    $arguments[0]->save();
+                    $this->data[$method] = $arguments[0];
                     $retval = true;
+                /* Getter for has_one */
                 } else {
-                    $one    = Record_Inflector::camelize($method);
-                    $finder = 'findBy' . Record_Inflector::camelize($key);
-                    $retval = $one::$finder(':one', $this->id());                        
+                    $data = $this->data();
+                    $retval = $data[$method];
                 }
             } else {
                 trigger_error("Overloaded call to undefined method $class->$method()", E_USER_ERROR);
