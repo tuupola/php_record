@@ -42,6 +42,18 @@ class Record_Overload {
                     $data = $this->data();
                     $retval = $data[$method];
                 }
+            } else if (in_array($method, $class::$belongs_to)) {
+                /* Setter for belongs_to */
+                if (count($arguments)) {
+                    trigger_error("Setter for belongs_to not supported yet: $class->$method(\$$method)", E_USER_WARNING);
+                /* Getter for belongs_to */
+                } else {
+                    $key = 'id';
+                    $belongs    = Record_Inflector::camelize($method);
+                    $finder = Record_Inflector::finder($key);
+                    $method = Record_Inflector::method($belongs . '_' . $key);
+                    return $belongs::$finder($this->$method());
+                }
             } else {
                 trigger_error("Overloaded call to undefined method $class->$method()", E_USER_ERROR);
             }
