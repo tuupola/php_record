@@ -61,6 +61,33 @@ class Record extends Record_Overload {
     public function afterDelete() { return true; }
     
     /**
+     * Construct new object using given attributes.
+     *
+     * @return object
+     */
+    public static function build($attribute_array=array()) {
+        $class  = get_called_class();
+        $object = new $class;
+        foreach ($attribute_array as $key => $attribute) {
+            $method = Record_Inflector::method($key);
+            $object->$method($attribute);
+        }
+        return $object;
+    }
+
+    /**
+     * Construct new object using given attributes and save it to database.
+     *
+     * @return object
+     */
+    public static function create($attribute_array=array()) {
+        $class  = get_called_class();
+        $object = $class::build($attribute_array);
+        $object->save();
+        return $object;
+    }
+    
+    /**
      * Generates a insert or update string from the supplied data and execute it
      *
      * @return boolean
@@ -93,9 +120,12 @@ class Record extends Record_Overload {
             $class = get_class($this);
             $key   = $class . '_id';
             foreach ($class::$has_one as $one) {
-                $setter = Record_Inflector::method($key);
-                $this->$one()->$setter($this->id());
-                $this->$one()->save();
+                /* Save only if we have one. */
+                if ($this->$one()) {
+                    $setter = Record_Inflector::method($key);
+                    $this->$one()->$setter($this->id());
+                    $this->$one()->save();                    
+                }
             };
              
             if (! $this->afterInsert()) return false;
