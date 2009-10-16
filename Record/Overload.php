@@ -63,6 +63,9 @@ class Record_Overload {
     }
     
    public static function __callStatic($method, $arguments) {
+
+       $params = array();
+
        if (2 == count($arguments)) {
            $modifier = $arguments[0];
            $value    = $arguments[1];
@@ -70,7 +73,11 @@ class Record_Overload {
            $modifier = ':all';
            $value    = $arguments[0];
        }
-       if (false !== strpos($method, 'findBy')) {
+       if (false !== strpos($method, 'findOneBy')) {
+           $variable = Record_Inflector::variable(str_replace('findOneBy', '', $method));
+           $params['where'] = sprintf('%s="%s"', $variable, $value);
+           $modifier = ':one';
+       } elseif (false !== strpos($method, 'findBy')) {
            $variable = Record_Inflector::variable(str_replace('findBy', '', $method));
            $params['where'] = sprintf('%s="%s"', $variable, $value);
        };

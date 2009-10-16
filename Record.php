@@ -201,18 +201,21 @@ class Record extends Record_Overload {
         $args     = func_get_args();
         $class    = get_called_class();
         $modifier = ':all';
+        $params   = array();
 
-        if (is_array($args[0])) {
-            $params = $args[0];
-        } else {
-            $params = $args[1];
-            if ($id = intval($args[0]) != '') {
-                /* Integer is primary key ... */
-                $params['where'] = sprintf('id=%d', $id);
+        if (isset($args[0])) {
+            if (is_array($args[0])) {
+                $params = $args[0];
             } else {
-                /* ... or modifier. */
-                $modifier = $args[0];
-            }
+                $params = $args[1];
+                if ($id = intval($args[0]) != '') {
+                    /* Integer is primary key ... */
+                    $params['where'] = sprintf('id=%d', $id);
+                } else {
+                    /* ... or modifier. */
+                    $modifier = $args[0];
+                }
+            }            
         }
 
         $sql    = Record::buildSql($params, $class);        
@@ -239,7 +242,7 @@ class Record extends Record_Overload {
         $dummy  = new $class;        
         $table  = $dummy->table();
         
-        $select = $params['select'] ? $params['select'] :  implode(',', $dummy->columns());
+        $select = isset($params['select']) ? $params['select'] :  implode(',', $dummy->columns());
         
         $sql = "SELECT $select FROM $table ";
         
