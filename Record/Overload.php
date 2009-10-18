@@ -40,9 +40,10 @@ class Record_Overload {
                 /* Getter for has_one */
                 } else {
                     $data = $this->data();
-                    $retval = $data[$method];
+                    $retval = isset($data[$method]) ? $data[$method] : false;
                 }
-            } else if (in_array($method, $class::$has_many)) {
+            } else if (in_array($method, $class::$has_many) || 
+                       in_array(Record_Inflector::property($method), $class::$has_many)) {
                 /* Setter for has_many */
                 if (count($arguments)) { 
                     $this->data[$method] = $arguments[0];
@@ -50,7 +51,7 @@ class Record_Overload {
                 /* Getter for has_many */
                 } else {
                     $data = $this->data();
-                    $retval = $data[$method];
+                    $retval = isset($data[$method]) ? $data[$method] : false;
                 }
             } else if (in_array($method, $class::$belongs_to)) {
                 /* Setter for belongs_to */

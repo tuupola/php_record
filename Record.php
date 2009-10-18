@@ -31,6 +31,7 @@ class Record extends Record_Overload {
     protected static $has_one    = array();
     protected static $has_many   = array();
     protected static $belongs_to = array();
+    protected static $habtm      = array();
     protected $data = array();
         
     /**
@@ -142,7 +143,7 @@ class Record extends Record_Overload {
             /* Save all has_many's */
             foreach ($class::$has_many as $many) {
                 /* Save only if we have one. */
-                if (count($this->$many())) {
+                if ($this->$many()) {
                     foreach ($this->$many() as $item) {
                         $setter = Record_Inflector::method($key);
                         $item->$setter($this->id());
@@ -259,7 +260,7 @@ class Record extends Record_Overload {
 
             /* Load all has_one's */
             foreach ($class::$has_one as $one) {
-                print $one_class = Record_Inflector::classify(Record_Inflector::pluralize($one));
+                $one_class = Record_Inflector::classify(Record_Inflector::pluralize($one));
                 $finder = Record_Inflector::finder($key);
                 $one_object = $one_class::$finder(':one', $object->id());
                 $object->data[$one] = $one_object;                
