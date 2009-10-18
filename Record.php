@@ -29,6 +29,7 @@ class Record extends Record_Overload {
     
     protected $id;
     protected static $has_one    = array();
+    protected static $has_many   = array();
     protected static $belongs_to = array();
     protected $data = array();
         
@@ -87,6 +88,15 @@ class Record extends Record_Overload {
         return $object;
     }
     
+    function properties($params) {
+        if (is_array($params)) {
+            foreach ($params as $key => $value) {
+                $method = Record_Inflector::method($key);
+                $this->$method($value);
+            }
+        }
+    }
+    
     /**
      * Generates a insert or update string from the supplied data and execute it
      *
@@ -116,15 +126,28 @@ class Record extends Record_Overload {
             /* TODO: This wont always work. */
             $this->id = self::lastInsertId();
             
-            /* Save all has_one's */
             $class = get_class($this);
             $key   = $class . '_id';
+
+            /* Save all has_one's */
             foreach ($class::$has_one as $one) {
                 /* Save only if we have one. */
                 if ($this->$one()) {
                     $setter = Record_Inflector::method($key);
                     $this->$one()->$setter($this->id());
                     $this->$one()->save();                    
+                }
+            };
+            
+            /* Save all has_many's */
+            foreach ($class::$has_many as $many) {
+                /* Save only if we have one. */
+                if (count($this->$many())) {
+                    foreach ($this->$many() as $item) {
+                        $setter = Record_Inflector::method($key);
+                        $item->$setter($this->id());
+                        $item->save();                                            
+                    }
                 }
             };
              
@@ -152,7 +175,7 @@ class Record extends Record_Overload {
             if (!$this->afterUpdate()) return false;
         }
         
-        return $retval;
+        return true;
     }
     
     public function delete() {
@@ -196,7 +219,7 @@ class Record extends Record_Overload {
         $sql = Record::buildSql($params, $class);
         return self::$dbh->query($sql, PDO::FETCH_CLASS, $class)->fetch();
     }
-    
+
     public static function find() {
         $args     = func_get_args();
         $class    = get_called_class();
@@ -204,31 +227,52 @@ class Record extends Record_Overload {
         $params   = array();
 
         if (isset($args[0])) {
+            /* Record::find(array()) */
             if (is_array($args[0])) {
                 $params = $args[0];
             } else {
-                $params = $args[1];
-                if ($id = intval($args[0]) != '') {
-                    /* Integer is primary key ... */
+                if (intval($args[0]) !='') {
+                    /* Record::find(6) */
+                    $id = intval($args[0]);
                     $params['where'] = sprintf('id=%d', $id);
+                    $modifier = ':one';
                 } else {
-                    /* ... or modifier. */
                     $modifier = $args[0];
+                    if (is_array($args[1])) {
+                        /* Record::find(':all', array()) */
+                        $params = $args[1];                        
+                    } else if (intval($args[1]) != '') {
+                        /* Record::find(':one', 6) */
+                        $id = intval($args[1]);
+                        /* Integer is primary key ... */
+                        $params['where'] = sprintf('id=%d', $id);
+                    }
                 }
             }            
         }
 
-        $sql    = Record::buildSql($params, $class);        
+        $sql    = Record::buildSql($params, $class);    
+
         $retval = array();
         foreach (self::$dbh->query($sql, PDO::FETCH_CLASS, $class) as $object) {
-            /* Load all has_one's */
             $key   = $class . '_id';
+
+            /* Load all has_one's */
             foreach ($class::$has_one as $one) {
-                $one_class = Record_Inflector::classify(Record_Inflector::pluralize($one));
+                print $one_class = Record_Inflector::classify(Record_Inflector::pluralize($one));
                 $finder = Record_Inflector::finder($key);
                 $one_object = $one_class::$finder(':one', $object->id());
                 $object->data[$one] = $one_object;                
             };
+
+            /* Load all has_manys's */
+            foreach ($class::$has_many as $many) {
+                $many_class = Record_Inflector::classify($many);
+                $finder = Record_Inflector::finder($key);
+                $all_objects = $many_class::$finder(':all', $object->id());
+                $object->data[$many] = $all_objects;                
+            };
+
             $retval[] = $object;
         }
         if (':one' == $modifier) {

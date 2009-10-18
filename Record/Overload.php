@@ -42,6 +42,16 @@ class Record_Overload {
                     $data = $this->data();
                     $retval = $data[$method];
                 }
+            } else if (in_array($method, $class::$has_many)) {
+                /* Setter for has_many */
+                if (count($arguments)) { 
+                    $this->data[$method] = $arguments[0];
+                    $retval = true;
+                /* Getter for has_many */
+                } else {
+                    $data = $this->data();
+                    $retval = $data[$method];
+                }
             } else if (in_array($method, $class::$belongs_to)) {
                 /* Setter for belongs_to */
                 if (count($arguments)) {
