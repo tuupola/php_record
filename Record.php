@@ -173,8 +173,10 @@ class Record extends Record_Overload {
             /* Force retval to be boolean. */
             $retval = self::$dbh->exec($sql) !== false;
             
-            if (!$this->afterUpdate()) return false;
+            if (! $this->afterUpdate()) return false;
         }
+
+        if (! $this->afterSave()) return false;
         
         return true;
     }
