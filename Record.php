@@ -3,7 +3,7 @@
 /*
 * Record - Simple Active Record implementation in PHP
 *
-* Copyright (c) 2008-2009 Philippe Archambault, Mika Tuupola
+* Copyright (c) 2002-2011 Philippe Archambault, Mika Tuupola
 *
 * Licensed under the MIT license:
 *   http://www.opensource.org/licenses/mit-license.php
@@ -257,6 +257,7 @@ class Record extends Record_Overload {
         $sql    = Record::buildSql($params, $class);    
 
         $retval = array();
+        
         foreach (self::$dbh->query($sql, PDO::FETCH_CLASS, $class) as $object) {
             $key   = $class . '_id';
 

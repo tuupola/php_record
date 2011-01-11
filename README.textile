@@ -19,6 +19,9 @@ class Person extends Record {
     protected $last_name;
     protected $age;
     
+    public static $has_one  = array('computer');
+    public static $has_many = array('cars');
+    
     public function beforeSave() {
         if (120 > $this->age()) {
             return false;
@@ -34,28 +37,50 @@ class Computer extends Record {
     protected $mark;
     protected $person_id;
     protected static $belongs_to = array('person');
+
+}
+
+class Car extends Record {
+    
+    protected $mark;
+    protected $person_id;
+    protected static $belongs_to = array('person');
     
 }
 
 Person::connection($dbh);
 
-$p = new Person();
-$p->firstName('Mika');
-$p->lastName('Tuupola');
-$p->age(100);
-$p->save();
+$mika = new Person();
+$mika->firstName('Mika');
+$mika->lastName('Tuupola');
+$mika->age(100);
+$mika->save();
 
-$c = new Computer();
-$c->mark('Apple');
-$p->computer($c);
+$mac = new Computer();
+$mac->mark('Mac');
+$mika->computer($mac);
 
 printf('Guy called %s %s is %d years old.', 
-        $p->firstName(),
-        $p->lastName(),
-        $p->age());
+        $mika->firstName(),
+        $mika->lastName(),
+        $mika->age());
+        
+$bmw = new Car();
+$bmw->mark('BMW');
+
+$audi = new Car();
+$audi->mark('Audi');
+
+$fisker = new Car();
+$fisker->mark('Fisker Karma');
+
+$mika->cars(array($bmw, $audi, $fisker));
+$mika->save();
         
 $all_mika = Person::findByFirstName('Mika');
 $one_mika = Person::findByFirstName(':one', 'Mika');
 
 $apple = $one_mika->computer();
+
+$three_cars = $one_mika->cars();
 </pre>
